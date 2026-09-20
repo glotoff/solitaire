@@ -1212,13 +1212,15 @@
       }
 
       canPlaceOnFoundation(card, fIndex) {
+        if (fIndex < 0 || fIndex >= 4) return false;
         const pile = this.foundations[fIndex];
         const requiredSuit = SUITS[fIndex];
+        if (card.suit !== requiredSuit) return false;
         if (pile.length === 0) {
-          return card.rank === 1 && card.suit === requiredSuit;
+          return card.rank === 1;
         }
         const topCard = pile[pile.length - 1];
-        return card.suit === requiredSuit && card.rank === topCard.rank + 1;
+        return card.rank === topCard.rank + 1;
       }
 
       canPlaceOnTableau(card, colIndex) {
@@ -1256,6 +1258,7 @@
     }
 
     const game = new Solitaire();
+    window.game = game;
 
     /* ==========================================================================
        DOM Rendering & Layout
@@ -1373,11 +1376,14 @@
 
       game.checkWin();
     }
+    window.renderBoard = renderBoard;
 
     /* ==========================================================================
        Touch & Mouse Drag and Drop (Unified Pointer Events)
        ========================================================================== */
     let dragState = null;
+    let lastTapCardId = null;
+    let lastTapTime = 0;
 
     function initInteraction() {
       // Stock click
@@ -1393,6 +1399,17 @@
       document.addEventListener('pointermove', onPointerMove);
       document.addEventListener('pointerup', onPointerUp);
       document.addEventListener('pointercancel', onPointerUp);
+
+      // Desktop native dblclick
+      document.addEventListener('dblclick', (e) => {
+        const cardEl = e.target.closest('.card');
+        if (!cardEl) return;
+        const cardId = cardEl.dataset.id;
+        const sourceInfo = findCardLocation(cardId);
+        if (sourceInfo && sourceInfo.card.faceUp) {
+          smartAutoPlace(sourceInfo);
+        }
+      });
 
       // Auto Complete click
       btnAutoFinish.addEventListener('click', runAutoComplete);
@@ -1421,15 +1438,18 @@
         return;
       }
 
-      // Check for double click / double tap: move to foundation
+      // Check for double click / double tap: auto-move to best position
       const now = Date.now();
-      if (cardEl._lastTap && (now - cardEl._lastTap < 350)) {
-        cardEl._lastTap = 0;
-        if (tryMoveToFoundation(sourceInfo)) {
+      if (lastTapCardId === cardId && (now - lastTapTime < 450)) {
+        lastTapCardId = null;
+        lastTapTime = 0;
+        if (smartAutoPlace(sourceInfo)) {
           return;
         }
+      } else {
+        lastTapCardId = cardId;
+        lastTapTime = now;
       }
-      cardEl._lastTap = now;
 
       // Start dragging stack
       let cardsToDrag = [];
@@ -1482,6 +1502,8 @@
       const dy = Math.abs(e.clientY - (dragState.startY + dragState.offsetY));
       if (dx > 4 || dy > 4) {
         dragState.hasMoved = true;
+        lastTapCardId = null;
+        lastTapTime = 0;
       }
 
       const targetX = e.clientX - dragState.offsetX;
@@ -1505,14 +1527,31 @@
         return;
       }
 
+      lastTapCardId = null;
+      lastTapTime = 0;
+
       // Drag and drop: find target drop element under pointer
       const dropTarget = findDropTarget(e.clientX, e.clientY);
       let success = false;
 
       if (dropTarget) {
         if (dropTarget.type === 'foundation' && state.cardsToDrag.length === 1) {
-          if (game.canPlaceOnFoundation(state.cardsToDrag[0], dropTarget.index)) {
-            executeMoveToFoundation(state.sourceInfo, dropTarget.index);
+          const card = state.cardsToDrag[0];
+          let targetF = -1;
+          if (game.canPlaceOnFoundation(card, dropTarget.index)) {
+            targetF = dropTarget.index;
+          } else {
+            // Find which foundation accepts this card (e.g. Ace or matching suit)
+            for (let f = 0; f < 4; f++) {
+              if (game.canPlaceOnFoundation(card, f)) {
+                targetF = f;
+                break;
+              }
+            }
+          }
+
+          if (targetF !== -1) {
+            executeMoveToFoundation(state.sourceInfo, targetF);
             success = true;
           }
         } else if (dropTarget.type === 'tableau') {
@@ -1554,30 +1593,51 @@
     }
 
     function findDropTarget(clientX, clientY) {
-      // Check foundations
+      // 1. Check individual foundation slots with generous touch margin
       for (let f = 0; f < 4; f++) {
         const rect = foundationSlots[f].getBoundingClientRect();
-        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+        if (clientX >= rect.left - 12 && clientX <= rect.right + 12 && clientY >= rect.top - 15 && clientY <= rect.bottom + 25) {
           return { type: 'foundation', index: f };
         }
       }
-      // Check tableau columns
+
+      // 2. Check entire top foundations row container
+      const fRow = document.querySelector('.foundations-row');
+      if (fRow) {
+        const r = fRow.getBoundingClientRect();
+        if (clientX >= r.left - 15 && clientX <= r.right + 15 && clientY >= r.top - 20 && clientY <= r.bottom + 30) {
+          return { type: 'foundation', index: 0 }; // onPointerUp will auto-route to the matching suit foundation
+        }
+      }
+
+      // 3. Check tableau columns
       for (let c = 0; c < 7; c++) {
         const rect = tableauCols[c].getBoundingClientRect();
-        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom + 250) {
+        if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom + 300) {
           return { type: 'tableau', col: c };
         }
       }
       return null;
     }
 
-    // Smart tap move (Foundation first, then Tableau)
-    function handleCardTap(sourceInfo) {
-      if (tryMoveToFoundation(sourceInfo)) return;
-      if (tryMoveToTableau(sourceInfo)) return;
-      // If neither, gentle vibration
+    let lastAutoPlaceTime = 0;
+
+    // Smart auto place for double-click / double-tap (Foundation first, then Tableau)
+    function smartAutoPlace(sourceInfo) {
+      const now = Date.now();
+      if (now - lastAutoPlaceTime < 300) return false;
+      if (tryMoveToFoundation(sourceInfo)) {
+        lastAutoPlaceTime = now;
+        return true;
+      }
+      if (tryMoveToTableau(sourceInfo)) {
+        lastAutoPlaceTime = now;
+        return true;
+      }
       triggerHaptic(15);
+      return false;
     }
+    window.smartAutoPlace = smartAutoPlace;
 
     function tryMoveToFoundation(sourceInfo) {
       // Only single cards can move to foundation
