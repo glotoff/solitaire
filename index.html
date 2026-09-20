@@ -177,11 +177,15 @@
       background: rgba(255, 255, 255, 0.1);
     }
 
-    .btn-icon {
-      padding: 6px 8px;
-      border-radius: 50%;
-      width: 34px;
-      height: 34px;
+    .game-logo {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
 
     .btn-gold {
@@ -206,16 +210,22 @@
       height: 100%;
       max-width: 960px;
       margin: 0 auto;
-      gap: 12px;
+      gap: 10px;
       overflow: hidden;
     }
 
-    .top-row {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: clamp(4px, 1.2vw, 12px);
+    /* Top Foundations Row: 4 Centered Foundation Slots */
+    .foundations-row {
+      display: flex;
+      justify-content: center;
+      gap: clamp(6px, 1.8vw, 16px);
       width: 100%;
       flex-shrink: 0;
+    }
+
+    .foundations-row .foundation-slot {
+      width: clamp(48px, 12.8vw, 86px);
+      aspect-ratio: 1 / var(--card-aspect);
     }
 
     .tableau-row {
@@ -225,6 +235,68 @@
       width: 100%;
       flex: 1;
       position: relative;
+    }
+
+    /* Bottom Ergonomic Thumb Bar */
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 4px 6px max(6px, var(--safe-bottom)) 6px;
+      gap: 8px;
+      flex-shrink: 0;
+      z-index: 100;
+      touch-action: none;
+    }
+
+    .bottom-controls {
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1.6vw, 10px);
+    }
+
+    .btn-action {
+      width: clamp(42px, 11vw, 48px);
+      height: clamp(42px, 11vw, 48px);
+      border-radius: 14px;
+      font-size: clamp(20px, 5.2vw, 24px);
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      touch-action: manipulation;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+    }
+
+    .btn-action:active {
+      transform: scale(0.92);
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .bottom-deck-area {
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 1.6vw, 10px);
+    }
+
+    .deck-slot {
+      width: clamp(48px, 12.8vw, 86px);
+      aspect-ratio: 1 / var(--card-aspect);
+      border-radius: var(--card-radius);
     }
 
     /* Slots & Cards */
@@ -348,7 +420,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: clamp(3px, 0.7vw, 6px);
+      padding: clamp(2px, 0.5vw, 4px);
       pointer-events: none;
     }
 
@@ -356,9 +428,9 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      line-height: 1;
-      font-weight: 800;
-      width: clamp(14px, 2.5vw, 24px);
+      line-height: 0.95;
+      font-weight: 900;
+      width: auto;
     }
 
     .card-corner.top-left {
@@ -371,14 +443,16 @@
     }
 
     .card-rank {
-      font-size: clamp(12px, 2.4vw, 20px);
+      font-size: clamp(16px, 3.6vw, 24px);
+      font-weight: 900;
       letter-spacing: -0.5px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
     .card-suit-small {
-      font-size: clamp(10px, 1.8vw, 15px);
+      font-size: clamp(13px, 2.8vw, 18px);
       margin-top: 1px;
+      font-weight: 900;
     }
 
     .card-center {
@@ -386,24 +460,25 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: clamp(20px, 4.2vw, 38px);
+      font-size: clamp(28px, 6.2vw, 48px);
       opacity: 0.95;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-weight: 900;
     }
 
     .court-art {
-      font-size: clamp(18px, 3.8vw, 34px);
+      font-size: clamp(22px, 5vw, 40px);
       font-weight: 900;
-      opacity: 0.85;
-      border: 1px solid currentColor;
+      border: 2px solid currentColor;
       border-radius: 50%;
-      width: clamp(26px, 5vw, 46px);
-      height: clamp(26px, 5vw, 46px);
+      width: clamp(32px, 6.8vw, 54px);
+      height: clamp(32px, 6.8vw, 54px);
       display: flex;
       align-items: center;
       justify-content: center;
+      background: rgba(0, 0, 0, 0.03);
     }
 
     .red {
@@ -644,29 +719,27 @@
         padding-left: max(4px, var(--safe-left)) !important;
         padding-right: max(4px, var(--safe-right)) !important;
         padding-top: max(4px, var(--safe-top)) !important;
+        padding-bottom: max(2px, var(--safe-bottom)) !important;
         max-width: 100vw !important;
         overflow: hidden !important;
       }
       header {
-        padding: 2px 2px 6px 2px !important;
-        gap: 2px !important;
+        padding: 2px 4px 4px 4px !important;
+        gap: 4px !important;
         width: 100% !important;
         min-width: 0 !important;
       }
-      .header-left, .header-right {
-        gap: 3px !important;
-        min-width: 0 !important;
-      }
-      .btn-icon {
-        width: 28px !important;
-        height: 28px !important;
-        padding: 2px !important;
+      .game-logo {
         font-size: 13px !important;
       }
+      .header-left, .header-right {
+        gap: 4px !important;
+        min-width: 0 !important;
+      }
       .stat-badge {
-        padding: 3px 5px !important;
+        padding: 3px 6px !important;
         font-size: 11px !important;
-        gap: 2px !important;
+        gap: 3px !important;
       }
       .stat-label {
         display: none !important;
@@ -675,23 +748,53 @@
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
+        gap: 8px !important;
       }
-      .top-row, .tableau-row {
+      .foundations-row {
+        gap: 4px !important;
+      }
+      .foundations-row .foundation-slot {
+        width: calc((100% - 6 * 3px) / 7) !important;
+      }
+      .tableau-row {
         gap: 3px !important;
       }
+      .bottom-bar {
+        padding: 4px 4px max(4px, var(--safe-bottom)) 4px !important;
+        gap: 6px !important;
+      }
+      .bottom-controls {
+        gap: 6px !important;
+      }
+      .btn-action {
+        width: 44px !important;
+        height: 44px !important;
+        font-size: 22px !important;
+        border-radius: 12px !important;
+      }
+      .bottom-deck-area {
+        gap: 6px !important;
+      }
+      .deck-slot {
+        width: calc((100vw - 26px) / 7) !important;
+        max-width: 58px !important;
+      }
       .card-inner {
-        padding: 2px 3px !important;
+        padding: 2px 2px !important;
       }
       .card-rank {
-        font-size: clamp(11px, 3.2vw, 16px) !important;
+        font-size: clamp(14px, 3.8vw, 19px) !important;
       }
       .card-suit-small {
-        font-size: clamp(9px, 2.6vw, 13px) !important;
+        font-size: clamp(11px, 2.8vw, 15px) !important;
+      }
+      .card-center {
+        font-size: clamp(24px, 6vw, 36px) !important;
       }
       .court-art {
-        width: clamp(20px, 5.5vw, 32px) !important;
-        height: clamp(20px, 5.5vw, 32px) !important;
-        font-size: clamp(12px, 3.5vw, 18px) !important;
+        width: clamp(26px, 6.2vw, 36px) !important;
+        height: clamp(26px, 6.2vw, 36px) !important;
+        font-size: clamp(15px, 3.8vw, 22px) !important;
       }
     }
   </style>
@@ -701,22 +804,22 @@
     <!-- Top Header -->
     <header>
       <div class="header-left">
-        <button class="btn btn-icon" id="btnSettings" title="Settings" aria-label="Settings">⚙️</button>
-        <button class="btn btn-icon" id="btnNewGame" title="New Game" aria-label="New Game">🔄</button>
-        <button class="btn btn-icon" id="btnUndo" title="Undo Move" aria-label="Undo">↩️</button>
-        <button class="btn btn-icon" id="btnHint" title="Show Hint" aria-label="Hint">💡</button>
+        <span class="game-logo">🃏 Solitaire</span>
       </div>
 
       <div class="header-right">
-        <div class="stat-badge">
+        <div class="stat-badge" title="Moves">
+          <span class="stat-icon">🎯</span>
           <span class="stat-label">Moves</span>
           <span id="statMoves">0</span>
         </div>
-        <div class="stat-badge">
+        <div class="stat-badge" title="Score">
+          <span class="stat-icon">⭐</span>
           <span class="stat-label">Score</span>
           <span id="statScore">0</span>
         </div>
-        <div class="stat-badge">
+        <div class="stat-badge" title="Time">
+          <span class="stat-icon">⏱️</span>
           <span class="stat-label">Time</span>
           <span id="statTime">00:00</span>
         </div>
@@ -726,19 +829,8 @@
 
     <!-- Main Game Board -->
     <main id="board">
-      <!-- Top Row: Stock, Waste, Gap, 4 Foundations -->
-      <div class="top-row">
-        <!-- Stock Pile -->
-        <div class="slot" id="slotStock" title="Stock Pile">
-          <span class="stock-reload">↻</span>
-        </div>
-        <!-- Waste Pile -->
-        <div class="slot" id="slotWaste" title="Waste Pile"></div>
-        
-        <!-- Empty Gap Column for Classic Solitaire Symmetry -->
-        <div></div>
-
-        <!-- 4 Foundations -->
+      <!-- Top Foundations Row: 4 Foundations centered -->
+      <div class="foundations-row">
         <div class="slot foundation-slot" id="foundation0" data-pile="f0" data-suit="♠" title="Spades Foundation">
           <span class="slot-icon">♠</span>
         </div>
@@ -765,10 +857,31 @@
       </div>
     </main>
 
-    <!-- Auto Complete floating button -->
-    <div class="floating-bar">
-      <button class="btn auto-finish-btn" id="btnAutoFinish">✨ Auto Complete</button>
-    </div>
+    <!-- Bottom Ergonomic Thumb Bar: Left Actions & Right Stock/Waste -->
+    <footer class="bottom-bar">
+      <!-- Left: Large Action Buttons for Thumb -->
+      <div class="bottom-controls">
+        <button class="btn btn-action" id="btnSettings" title="Settings" aria-label="Settings">⚙️</button>
+        <button class="btn btn-action" id="btnNewGame" title="New Game" aria-label="New Game">🔄</button>
+        <button class="btn btn-action" id="btnUndo" title="Undo Move" aria-label="Undo">↩️</button>
+        <button class="btn btn-action" id="btnHint" title="Show Hint" aria-label="Hint">💡</button>
+      </div>
+
+      <!-- Center: Auto Complete Button (when eligible) -->
+      <div class="bottom-center">
+        <button class="btn auto-finish-btn" id="btnAutoFinish">✨ Auto Finish</button>
+      </div>
+
+      <!-- Right: Opened Card (Waste) and Deck (Stock) under Right Thumb -->
+      <div class="bottom-deck-area">
+        <!-- Waste Pile (Open Card) -->
+        <div class="slot deck-slot" id="slotWaste" title="Waste Pile"></div>
+        <!-- Stock Pile (Draw Deck) -->
+        <div class="slot deck-slot" id="slotStock" title="Stock Pile">
+          <span class="stock-reload">↻</span>
+        </div>
+      </div>
+    </footer>
   </div>
 
   <!-- Settings Modal -->
@@ -1308,9 +1421,9 @@
         return;
       }
 
-      // Check for double click / double tap: auto-move to foundation
+      // Check for double click / double tap: move to foundation
       const now = Date.now();
-      if (cardEl._lastTap && (now - cardEl._lastTap < 280)) {
+      if (cardEl._lastTap && (now - cardEl._lastTap < 350)) {
         cardEl._lastTap = 0;
         if (tryMoveToFoundation(sourceInfo)) {
           return;
@@ -1386,10 +1499,9 @@
       const state = dragState;
       dragState = null;
 
-      // If it was just a tap without dragging, attempt smart auto-move!
+      // If it was just a tap without dragging, DO NOT auto-move (only double tap or drag moves cards)
       if (!state.hasMoved) {
         renderBoard();
-        handleCardTap(state.sourceInfo);
         return;
       }
 
