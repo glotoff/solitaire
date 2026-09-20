@@ -1,4 +1,4 @@
-const CACHE_NAME = 'solitaire-pwa-v1';
+const CACHE_NAME = 'solitaire-pwa-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,7 +7,9 @@ const ASSETS_TO_CACHE = [
   './icon-192.png',
   './icon-512.png',
   './icon-maskable.png',
-  './apple-touch-icon.png'
+  './apple-touch-icon.png',
+  './og-image.jpg',
+  './og-image.png'
 ];
 
 self.addEventListener('install', (event) => {
