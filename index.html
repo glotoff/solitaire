@@ -59,6 +59,7 @@
       --safe-left: env(safe-area-inset-left, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
       --card-aspect: 1.4;
+      --card-width: clamp(48px, 12.8vw, 86px);
     }
 
     [data-theme="navy"] {
@@ -224,7 +225,7 @@
     }
 
     .foundations-row .foundation-slot {
-      width: clamp(48px, 12.8vw, 86px);
+      width: var(--card-width);
       aspect-ratio: 1 / var(--card-aspect);
     }
 
@@ -294,9 +295,19 @@
     }
 
     .deck-slot {
-      width: clamp(48px, 12.8vw, 86px);
+      width: var(--card-width);
       aspect-ratio: 1 / var(--card-aspect);
       border-radius: var(--card-radius);
+      position: relative;
+    }
+
+    #slotWaste.draw-3 {
+      width: calc(var(--card-width) + clamp(36px, 9vw, 50px));
+      transition: width 0.15s ease;
+    }
+
+    #slotWaste .card {
+      width: var(--card-width);
     }
 
     /* Slots & Cards */
@@ -468,17 +479,17 @@
       font-weight: 900;
     }
 
-    .court-art {
-      font-size: clamp(22px, 5vw, 40px);
-      font-weight: 900;
-      border: 2px solid currentColor;
-      border-radius: 50%;
-      width: clamp(32px, 6.8vw, 54px);
-      height: clamp(32px, 6.8vw, 54px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.03);
+    .card-center.court-center {
+      width: calc(100% - clamp(16px, 3.8vw, 24px));
+      height: calc(100% - clamp(14px, 3.2vw, 22px));
+    }
+
+    .court-svg {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      display: block;
     }
 
     .red {
@@ -695,9 +706,23 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
       z-index: 1500;
       display: none;
+    }
+
+    .btn-action-large {
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+    .btn-action-large:hover {
+      transform: translateY(-2px);
+    }
+    .btn-action-large:active {
+      transform: scale(0.97);
     }
 
     /* iOS install banner popup */
@@ -943,6 +968,85 @@
     </div>
   </div>
 
+  <!-- Restart / New Game Confirmation Modal -->
+  <div class="modal-backdrop" id="restartModal">
+    <div class="modal-content" style="text-align: center; max-width: 350px;">
+      <div class="modal-header" style="justify-content: center; position: relative;">
+        <h2 class="modal-title" style="font-size: 19px;">🔄 Перезапуск игры</h2>
+        <button class="modal-close" id="btnCloseRestart" style="position: absolute; right: 0;">&times;</button>
+      </div>
+      <p style="opacity: 0.8; font-size: 13px; margin: 10px 0 16px 0;">Выберите действие для текущей партии:</p>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-action-large" id="btnRestartDeal" style="background: rgba(255,255,255,0.18); padding: 12px; border-radius: 14px; text-align: left; display: flex; align-items: center; gap: 12px; width: 100%;">
+          <span style="font-size: 26px;">🔄</span>
+          <div>
+            <div style="font-weight: 700; font-size: 14px;">Сыграть заново (Restart)</div>
+            <div style="font-size: 11px; opacity: 0.75;">Повторить этот расклад с самого начала</div>
+          </div>
+        </button>
+
+        <button class="btn btn-action-large btn-gold" id="btnRestartNewGame" style="padding: 12px; border-radius: 14px; text-align: left; display: flex; align-items: center; gap: 12px; width: 100%;">
+          <span style="font-size: 26px;">🃏</span>
+          <div>
+            <div style="font-weight: 800; font-size: 14px;">Новая игра (New Game)</div>
+            <div style="font-size: 11px; opacity: 0.85;">Перемешать и сдать новые карты</div>
+          </div>
+        </button>
+
+        <button class="btn" id="btnRestartCancel" style="padding: 10px; border-radius: 12px; margin-top: 4px; opacity: 0.8; width: 100%;">
+          ✕ Продолжить текущую партию
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Win / Victory Modal -->
+  <div class="modal-backdrop" id="winModal">
+    <div class="modal-content" style="text-align: center; max-width: 350px;">
+      <div style="font-size: 44px; margin-bottom: 4px;">🏆</div>
+      <h2 class="modal-title" style="font-size: 24px; color: var(--accent-gold); font-weight: 800; justify-content: center;">Победа!</h2>
+      <p style="opacity: 0.85; font-size: 13px; margin: 6px 0 16px 0;">Поздравляем, пасьянс успешно разложен!</p>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+        <div style="background: rgba(0,0,0,0.3); padding: 8px 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Время</div>
+          <div id="winStatTime" style="font-size: 15px; font-weight: 700; margin-top: 2px;">00:00</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 8px 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Ходы</div>
+          <div id="winStatMoves" style="font-size: 15px; font-weight: 700; margin-top: 2px;">0</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 8px 4px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+          <div style="font-size: 10px; opacity: 0.7; text-transform: uppercase;">Очки</div>
+          <div id="winStatScore" style="font-size: 15px; font-weight: 700; margin-top: 2px;">0</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-action-large btn-gold" id="btnWinNewGame" style="padding: 12px; border-radius: 14px; text-align: left; display: flex; align-items: center; gap: 12px; width: 100%;">
+          <span style="font-size: 26px;">🃏</span>
+          <div>
+            <div style="font-weight: 800; font-size: 14px;">Новая игра (New Game)</div>
+            <div style="font-size: 11px; opacity: 0.85;">Перемешать и сдать новые карты</div>
+          </div>
+        </button>
+
+        <button class="btn btn-action-large" id="btnWinRestart" style="background: rgba(255,255,255,0.18); padding: 12px; border-radius: 14px; text-align: left; display: flex; align-items: center; gap: 12px; width: 100%;">
+          <span style="font-size: 26px;">🔄</span>
+          <div>
+            <div style="font-weight: 700; font-size: 14px;">Сыграть заново (Restart)</div>
+            <div style="font-size: 11px; opacity: 0.75;">Повторить эту сдачу с начала</div>
+          </div>
+        </button>
+
+        <button class="btn" id="btnWinWatch" style="padding: 10px; border-radius: 12px; margin-top: 4px; opacity: 0.8; width: 100%;">
+          ✨ Смотреть анимацию карт
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Win Animation Canvas -->
   <canvas id="winCanvas"></canvas>
 
@@ -1084,6 +1188,7 @@
         this.history = [];
         this.hasWon = false;
         this.cardBack = 'blue';
+        this.initialState = null;
       }
 
       startTimer() {
@@ -1155,6 +1260,32 @@
           card.faceUp = false;
           this.stock.push(card);
         }
+
+        // Save initial deal for restart capability
+        this.initialState = {
+          stock: this.stock.map(c => ({...c})),
+          tableau: this.tableau.map(col => col.map(c => ({...c})))
+        };
+
+        this.startTimer();
+        sound.playCardDeal();
+      }
+
+      restartGame() {
+        if (!this.initialState) return this.newGame();
+        this.stopTimer();
+        this.seconds = 0;
+        this.moves = 0;
+        this.score = 0;
+        this.history = [];
+        this.hasWon = false;
+        updateTimerDisplay();
+        updateStatsDisplay();
+
+        this.waste = [];
+        this.foundations = [[], [], [], []];
+        this.stock = this.initialState.stock.map(c => ({...c, faceUp: false}));
+        this.tableau = this.initialState.tableau.map(col => col.map(c => ({...c})));
 
         this.startTimer();
         sound.playCardDeal();
@@ -1270,6 +1401,105 @@
     const foundationSlots = Array.from(document.querySelectorAll('.foundation-slot'));
     const btnAutoFinish = document.getElementById('btnAutoFinish');
 
+    function getCourtSvg(card) {
+      const isRed = card.color === 'red';
+      const suit = card.suit;
+      const rank = card.rank;
+      const bgTint = isRed ? '#fff5f5' : '#f8fafc';
+      const gold = '#ca8a04';
+      const goldBright = '#eab308';
+      const skin = '#ffe4e6';
+
+      if (rank === 11) {
+        // Jack: Feathered Renaissance cap, halberd, noble collar, youth profile
+        return `
+          <svg class="court-svg" viewBox="0 0 64 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="60" height="84" rx="4" stroke="currentColor" stroke-width="1" stroke-opacity="0.35" fill="none"/>
+            <rect x="5" y="5" width="54" height="78" rx="2" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.2" fill="${bgTint}"/>
+            <!-- Halberd -->
+            <path d="M12 74 L12 16 M9 18 L15 18 M12 12 L12 18 M7 16 Q12 13 17 16 Q12 24 7 16 Z" stroke="${gold}" stroke-width="1.5" fill="${goldBright}"/>
+            <!-- Noble Doublet / Tunic -->
+            <path d="M15 72 C15 52, 21 46, 32 46 C43 46, 49 52, 49 72 Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M21 50 L32 70 L43 50" stroke="${gold}" stroke-width="1.5" fill="none"/>
+            <!-- Folded Collar Ruff -->
+            <path d="M21 45 Q32 50 43 45 Q32 42 21 45 Z" fill="#ffffff" stroke="currentColor" stroke-width="1"/>
+            <!-- Face -->
+            <path d="M25 30 Q23 38 32 42 Q41 38 39 30 Q41 24 32 24 Q23 24 25 30 Z" fill="${skin}" stroke="currentColor" stroke-width="1"/>
+            <!-- Curls -->
+            <path d="M24 30 Q21 34 23 38 M40 30 Q43 34 41 38" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <!-- Eyes & Smile -->
+            <circle cx="28" cy="32" r="1.1" fill="currentColor"/>
+            <circle cx="36" cy="32" r="1.1" fill="currentColor"/>
+            <path d="M30 38 Q32 40 34 38" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+            <!-- Feathered Beret / Cap -->
+            <path d="M21 26 C21 17, 43 17, 43 26 Z" fill="currentColor"/>
+            <path d="M32 20 C24 10, 16 6, 26 6 C28 10, 31 16, 32 20 Z" fill="${goldBright}" stroke="${gold}" stroke-width="0.8"/>
+            <!-- Chest Suit Badge -->
+            <text x="32" y="63" font-size="11" font-weight="900" text-anchor="middle" fill="currentColor">${suit}</text>
+          </svg>
+        `;
+      } else if (rank === 12) {
+        // Queen: Tiara/coronet with jewels, flowing curls, royal necklace, flower/scepter
+        return `
+          <svg class="court-svg" viewBox="0 0 64 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="60" height="84" rx="4" stroke="currentColor" stroke-width="1" stroke-opacity="0.35" fill="none"/>
+            <rect x="5" y="5" width="54" height="78" rx="2" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.2" fill="${bgTint}"/>
+            <!-- Scepter / Royal Flower -->
+            <path d="M12 74 L12 24 M9 24 L15 24" stroke="${gold}" stroke-width="1.5"/>
+            <path d="M12 18 C10 14, 6 15, 6 18 C6 22, 12 25, 12 25 C12 25, 18 22, 18 18 C18 15, 14 14, 12 18 Z" fill="currentColor"/>
+            <!-- Queen's Gown -->
+            <path d="M15 72 C15 54, 21 48, 32 48 C43 48, 49 54, 49 72 Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M23 54 Q32 62 41 54" stroke="currentColor" stroke-width="1" fill="none"/>
+            <!-- Pearl Necklace -->
+            <path d="M25 47 Q32 52 39 47" stroke="${gold}" stroke-width="1.5" stroke-dasharray="1.5,1.5" fill="none"/>
+            <!-- Face -->
+            <path d="M26 31 Q24 38 32 42 Q40 38 38 31 Q40 26 32 26 Q24 26 26 31 Z" fill="${skin}" stroke="currentColor" stroke-width="1"/>
+            <!-- Long Royal Curls -->
+            <path d="M23 28 C19 34, 20 44, 25 46 M41 28 C45 34, 44 44, 39 46" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <!-- Eyes & Smile -->
+            <path d="M27 33 Q29 32 30 33 M34 33 Q35 32 37 33" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <path d="M30 38 Q32 40 34 38" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+            <!-- Tiara / Coronet -->
+            <path d="M22 26 L25 18 L28 24 L32 15 L36 24 L39 18 L42 26 Z" fill="${goldBright}" stroke="${gold}" stroke-width="1.2"/>
+            <circle cx="32" cy="15" r="1.5" fill="${isRed ? '#dc2626' : '#0f172a'}"/>
+            <!-- Chest Suit Badge -->
+            <text x="32" y="65" font-size="11" font-weight="900" text-anchor="middle" fill="currentColor">${suit}</text>
+          </svg>
+        `;
+      } else {
+        // King: Royal Crown with cross, regal beard and moustache, royal robe, sword
+        return `
+          <svg class="court-svg" viewBox="0 0 64 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="60" height="84" rx="4" stroke="currentColor" stroke-width="1" stroke-opacity="0.35" fill="none"/>
+            <rect x="5" y="5" width="54" height="78" rx="2" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.2" fill="${bgTint}"/>
+            <!-- Royal Sword -->
+            <path d="M51 74 L51 22 M48 24 L54 24 M51 18 L51 22" stroke="${gold}" stroke-width="1.8"/>
+            <path d="M51 16 L53 18 L49 18 Z" fill="${goldBright}"/>
+            <!-- Royal Robe -->
+            <path d="M15 72 C15 52, 21 46, 32 46 C43 46, 49 52, 49 72 Z" fill="currentColor" fill-opacity="0.14" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M20 50 L32 72 L44 50" stroke="${gold}" stroke-width="1.5" fill="none"/>
+            <!-- Ermine Collar -->
+            <path d="M21 46 Q32 52 43 46 Q32 44 21 46 Z" fill="#ffffff" stroke="currentColor" stroke-width="1"/>
+            <!-- Face with Royal Beard & Moustache -->
+            <path d="M25 30 Q24 38 32 43 Q40 38 39 30 Q40 25 32 25 Q24 25 25 30 Z" fill="${skin}" stroke="currentColor" stroke-width="1"/>
+            <path d="M27 38 C28 44, 36 44, 37 38 C35 41, 29 41, 27 38 Z" fill="currentColor"/>
+            <path d="M27 36 Q32 39 37 36 Q32 34 27 36 Z" fill="currentColor"/>
+            <!-- Eyes & Brows -->
+            <path d="M27 31 L30 32 M37 31 L34 32" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="28.5" cy="33.5" r="1" fill="currentColor"/>
+            <circle cx="35.5" cy="33.5" r="1" fill="currentColor"/>
+            <!-- Hair sides -->
+            <path d="M23 28 C20 34, 21 42, 24 44 M41 28 C44 34, 43 42, 40 44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <!-- Royal Crown -->
+            <path d="M22 25 L23 16 L27 21 L32 14 L37 21 L41 16 L42 25 Z" fill="${goldBright}" stroke="${gold}" stroke-width="1.2"/>
+            <circle cx="32" cy="14" r="1.5" fill="${gold}"/>
+            <!-- Chest Suit Badge -->
+            <text x="32" y="64" font-size="11" font-weight="900" text-anchor="middle" fill="currentColor">${suit}</text>
+          </svg>
+        `;
+      }
+    }
+
     function createCardElement(card) {
       const el = document.createElement('div');
       el.className = `card ${card.faceUp ? 'face-up' : 'face-down'}`;
@@ -1280,15 +1510,14 @@
         el.innerHTML = `<div class="card-back-pattern card-back-${game.cardBack}"></div>`;
       } else {
         const isCourt = card.rank >= 11;
-        const courtChar = card.rank === 11 ? 'J' : card.rank === 12 ? 'Q' : 'K';
         el.innerHTML = `
           <div class="card-inner ${card.color}">
             <div class="card-corner top-left">
               <span class="card-rank">${card.rankName}</span>
               <span class="card-suit-small">${card.suit}</span>
             </div>
-            <div class="card-center">
-              ${isCourt ? `<div class="court-art">${courtChar}</div>` : card.suit}
+            <div class="card-center ${isCourt ? 'court-center' : ''}">
+              ${isCourt ? getCourtSvg(card) : card.suit}
             </div>
             <div class="card-corner bottom-right">
               <span class="card-rank">${card.rankName}</span>
@@ -1313,14 +1542,34 @@
 
       // 2. Waste pile
       slotWaste.innerHTML = '';
-      if (game.waste.length > 0) {
-        // Show up to 3 cards slightly offset if draw 3, or just top
-        const startIdx = Math.max(0, game.waste.length - 3);
+      if (game.drawCount === 3) {
+        slotWaste.classList.add('draw-3');
+        const count = Math.min(3, game.waste.length);
+        const startIdx = game.waste.length - count;
+        const fanOffset = window.innerWidth < 480 ? 19 : 24;
+        slotWaste.style.width = count > 1 ? `calc(var(--card-width) + ${(count - 1) * fanOffset}px)` : 'var(--card-width)';
+
         for (let i = startIdx; i < game.waste.length; i++) {
           const card = game.waste[i];
           const cardEl = createCardElement(card);
-          const offset = (i - startIdx) * 5;
-          cardEl.style.transform = `translateX(${offset}px)`;
+          const pos = i - startIdx;
+          cardEl.style.left = `${pos * fanOffset}px`;
+          cardEl.style.zIndex = pos + 1;
+
+          if (i === game.waste.length - 1) {
+            cardEl.style.cursor = 'pointer';
+          } else {
+            cardEl.style.cursor = 'default';
+            cardEl.style.pointerEvents = 'none';
+          }
+          slotWaste.appendChild(cardEl);
+        }
+      } else {
+        slotWaste.classList.remove('draw-3');
+        slotWaste.style.width = 'var(--card-width)';
+        if (game.waste.length > 0) {
+          const topCard = game.waste[game.waste.length - 1];
+          const cardEl = createCardElement(topCard);
           slotWaste.appendChild(cardEl);
         }
       }
@@ -1416,7 +1665,12 @@
     }
 
     function onPointerDown(e) {
-      if (game.hasWon) return;
+      if (game.hasWon) {
+        if (!winModal.classList.contains('active') && !e.target.closest('#winModal')) {
+          showWinModal();
+        }
+        return;
+      }
       const cardEl = e.target.closest('.card');
       if (!cardEl) return;
 
@@ -1874,6 +2128,7 @@
         btn.classList.add('active');
         game.drawCount = parseInt(btn.dataset.value, 10);
         localStorage.setItem('solitaire_draw', game.drawCount);
+        renderBoard();
       });
     });
 
@@ -1895,17 +2150,40 @@
       localStorage.setItem('solitaire_sound', sound.enabled ? '1' : '0');
     });
 
-    // Buttons: Undo, Hint, New Game
+    // Restart & Win Modals
+    const restartModal = document.getElementById('restartModal');
+    const winModal = document.getElementById('winModal');
+    let winModalTimer = null;
+
     document.getElementById('btnUndo').addEventListener('click', () => {
       if (game.undo()) renderBoard();
     });
     document.getElementById('btnHint').addEventListener('click', showHint);
+
+    // Open Restart / New Game modal on reload button click
     document.getElementById('btnNewGame').addEventListener('click', () => {
-      if (confirm('Start a new game?')) {
-        stopWinAnimation();
-        game.newGame();
-        renderBoard();
-      }
+      restartModal.classList.add('active');
+    });
+    document.getElementById('btnCloseRestart').addEventListener('click', () => {
+      restartModal.classList.remove('active');
+    });
+    document.getElementById('btnRestartCancel').addEventListener('click', () => {
+      restartModal.classList.remove('active');
+    });
+    document.getElementById('btnRestartDeal').addEventListener('click', () => {
+      restartModal.classList.remove('active');
+      stopWinAnimation();
+      game.restartGame();
+      renderBoard();
+    });
+    document.getElementById('btnRestartNewGame').addEventListener('click', () => {
+      restartModal.classList.remove('active');
+      stopWinAnimation();
+      game.newGame();
+      renderBoard();
+    });
+    restartModal.addEventListener('click', (e) => {
+      if (e.target === restartModal) restartModal.classList.remove('active');
     });
 
     /* ==========================================================================
@@ -1916,10 +2194,54 @@
     let winAnimId = null;
     let bouncingCards = [];
 
+    function showWinModal() {
+      if (winModalTimer) {
+        clearTimeout(winModalTimer);
+        winModalTimer = null;
+      }
+      document.getElementById('winStatTime').textContent = document.getElementById('statTime').textContent;
+      document.getElementById('winStatMoves').textContent = game.moves;
+      document.getElementById('winStatScore').textContent = game.score;
+      winModal.classList.add('active');
+    }
+
+    winCanvas.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      showWinModal();
+    });
+
+    document.getElementById('btnWinNewGame').addEventListener('click', () => {
+      winModal.classList.remove('active');
+      stopWinAnimation();
+      game.newGame();
+      renderBoard();
+    });
+
+    document.getElementById('btnWinRestart').addEventListener('click', () => {
+      winModal.classList.remove('active');
+      stopWinAnimation();
+      game.restartGame();
+      renderBoard();
+    });
+
+    document.getElementById('btnWinWatch').addEventListener('click', () => {
+      winModal.classList.remove('active');
+    });
+
+    winModal.addEventListener('click', (e) => {
+      if (e.target === winModal) winModal.classList.remove('active');
+    });
+
     function startWinAnimation() {
       winCanvas.style.display = 'block';
       winCanvas.width = window.innerWidth;
       winCanvas.height = window.innerHeight;
+
+      // Automatically show victory menu after celebratory bounce or on tap
+      if (winModalTimer) clearTimeout(winModalTimer);
+      winModalTimer = setTimeout(() => {
+        if (game.hasWon) showWinModal();
+      }, 3500);
 
       // Extract cards from foundation to bounce
       bouncingCards = [];
@@ -1990,12 +2312,17 @@
     }
 
     function stopWinAnimation() {
+      if (winModalTimer) {
+        clearTimeout(winModalTimer);
+        winModalTimer = null;
+      }
       if (winAnimId) {
         cancelAnimationFrame(winAnimId);
         winAnimId = null;
       }
       ctx.clearRect(0, 0, winCanvas.width, winCanvas.height);
       winCanvas.style.display = 'none';
+      winModal.classList.remove('active');
     }
 
     /* ==========================================================================
@@ -2075,11 +2402,17 @@
     }
 
     // Initialize Game
-    window.addEventListener('DOMContentLoaded', () => {
+    function initGameApp() {
       initInteraction();
       game.newGame();
       renderBoard();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initGameApp);
+    } else {
+      initGameApp();
+    }
 
     window.addEventListener('resize', () => {
       if (winCanvas.style.display === 'block') {
