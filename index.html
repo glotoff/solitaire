@@ -2171,10 +2171,35 @@
     }
 
     function triggerHaptic(duration) {
-      if (document.getElementById('toggleHaptics').checked && navigator.vibrate) {
+      if (!document.getElementById('toggleHaptics').checked) return;
+      if (window.AndroidBridge && window.AndroidBridge.vibrate) {
+        try {
+          const ms = Array.isArray(duration) ? duration[0] : duration;
+          window.AndroidBridge.vibrate(ms || 15);
+          return;
+        } catch(e) {}
+      }
+      if (navigator.vibrate) {
         try { navigator.vibrate(duration); } catch(e) {}
       }
     }
+
+    // Native Android Hardware/Gesture Back Navigation Handler
+    window.handleAndroidBackButton = function() {
+      if (winModal && winModal.classList.contains('active')) {
+        winModal.classList.remove('active');
+        return true;
+      }
+      if (restartModal && restartModal.classList.contains('active')) {
+        restartModal.classList.remove('active');
+        return true;
+      }
+      if (settingsModal && settingsModal.classList.contains('active')) {
+        settingsModal.classList.remove('active');
+        return true;
+      }
+      return false;
+    };
 
     // Settings Modal controls
     const settingsModal = document.getElementById('settingsModal');
@@ -2417,6 +2442,7 @@
     const btnInstall = document.getElementById('btnInstall');
 
     window.addEventListener('beforeinstallprompt', (e) => {
+      if (window.AndroidBridge && window.AndroidBridge.isNative && window.AndroidBridge.isNative()) return;
       e.preventDefault();
       deferredPrompt = e;
       btnInstall.style.display = 'inline-flex';
