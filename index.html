@@ -543,17 +543,42 @@
       pointer-events: auto;
     }
 
+    .bottom-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      min-width: 0;
+      padding: 0 4px;
+      z-index: 101;
+      touch-action: manipulation;
+    }
+
     .auto-finish-btn {
       background: linear-gradient(135deg, #10b981 0%, #059669 100%);
       color: #fff;
-      font-weight: 700;
-      padding: 8px 18px;
+      font-weight: 800;
+      padding: clamp(6px, 1.8vw, 10px) clamp(10px, 3vw, 18px);
       border-radius: 20px;
-      font-size: 14px;
-      border: 1px solid rgba(255,255,255,0.4);
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
+      font-size: clamp(12px, 3.2vw, 15px);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.55);
       animation: bounce 1.2s infinite;
       display: none;
+      white-space: nowrap;
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      line-height: 1.2;
+    }
+
+    .auto-finish-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.7);
     }
 
     @keyframes bounce {
@@ -1207,6 +1232,8 @@
       }
 
       newGame() {
+        if (typeof isAutoCompleting !== 'undefined') isAutoCompleting = false;
+        if (typeof btnAutoFinish !== 'undefined' && btnAutoFinish) btnAutoFinish.disabled = false;
         this.stopTimer();
         this.seconds = 0;
         this.moves = 0;
@@ -1272,6 +1299,8 @@
       }
 
       restartGame() {
+        if (typeof isAutoCompleting !== 'undefined') isAutoCompleting = false;
+        if (typeof btnAutoFinish !== 'undefined' && btnAutoFinish) btnAutoFinish.disabled = false;
         if (!this.initialState) return this.newGame();
         this.stopTimer();
         this.seconds = 0;
@@ -1618,7 +1647,10 @@
 
       // Check auto complete condition
       if (game.canAutoComplete() && !game.hasWon) {
-        btnAutoFinish.style.display = 'inline-flex';
+        if (!isAutoCompleting) {
+          btnAutoFinish.style.display = 'inline-flex';
+          btnAutoFinish.disabled = false;
+        }
       } else {
         btnAutoFinish.style.display = 'none';
       }
@@ -1637,6 +1669,7 @@
     function initInteraction() {
       // Stock click
       slotStock.addEventListener('pointerdown', (e) => {
+        if (isAutoCompleting) return;
         e.preventDefault();
         game.drawStock();
         renderBoard();
@@ -1651,6 +1684,7 @@
 
       // Desktop native dblclick
       document.addEventListener('dblclick', (e) => {
+        if (isAutoCompleting) return;
         const cardEl = e.target.closest('.card');
         if (!cardEl) return;
         const cardId = cardEl.dataset.id;
@@ -1660,11 +1694,25 @@
         }
       });
 
-      // Auto Complete click
-      btnAutoFinish.addEventListener('click', runAutoComplete);
+      // Auto Complete click and touch trigger (immediate response)
+      let autoFinishDebounce = false;
+      const handleAutoFinish = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (autoFinishDebounce || isAutoCompleting) return;
+        autoFinishDebounce = true;
+        setTimeout(() => { autoFinishDebounce = false; }, 300);
+        runAutoComplete();
+      };
+      btnAutoFinish.addEventListener('touchstart', handleAutoFinish, { passive: false });
+      btnAutoFinish.addEventListener('pointerdown', handleAutoFinish);
+      btnAutoFinish.addEventListener('click', handleAutoFinish);
     }
 
     function onPointerDown(e) {
+      if (isAutoCompleting) return;
       if (game.hasWon) {
         if (!winModal.classList.contains('active') && !e.target.closest('#winModal')) {
           showWinModal();
@@ -1976,29 +2024,60 @@
     /* ==========================================================================
        Auto Complete Cascade
        ========================================================================== */
+    let isAutoCompleting = false;
+
     async function runAutoComplete() {
+      if (isAutoCompleting) return;
+      isAutoCompleting = true;
       btnAutoFinish.disabled = true;
       btnAutoFinish.style.display = 'none';
 
-      let moved = true;
-      while (moved) {
-        moved = false;
-        // Scan tableau for lowest eligible card
-        for (let c = 0; c < 7; c++) {
-          const col = game.tableau[c];
-          if (col.length === 0) continue;
-          const topCard = col[col.length - 1];
-          for (let f = 0; f < 4; f++) {
-            if (game.canPlaceOnFoundation(topCard, f)) {
-              executeMoveToFoundation({ type: 'tableau', col: c, index: col.length - 1, card: topCard }, f);
-              renderBoard();
-              moved = true;
-              await new Promise(r => setTimeout(r, 60));
-              break;
+      try {
+        let moved = true;
+        while (moved && !game.hasWon) {
+          moved = false;
+
+          // Check waste first if any cards remain
+          if (game.waste.length > 0) {
+            const topWaste = game.waste[game.waste.length - 1];
+            for (let f = 0; f < 4; f++) {
+              if (game.canPlaceOnFoundation(topWaste, f)) {
+                executeMoveToFoundation({ type: 'waste', card: topWaste }, f);
+                renderBoard();
+                moved = true;
+                await new Promise(r => setTimeout(r, 45));
+                break;
+              }
             }
+            if (moved) continue;
           }
-          if (moved) break;
+
+          // Scan tableau for lowest eligible card
+          for (let c = 0; c < 7; c++) {
+            const col = game.tableau[c];
+            if (col.length === 0) continue;
+            const topCard = col[col.length - 1];
+            for (let f = 0; f < 4; f++) {
+              if (game.canPlaceOnFoundation(topCard, f)) {
+                executeMoveToFoundation({ type: 'tableau', col: c, index: col.length - 1, card: topCard }, f);
+                renderBoard();
+                moved = true;
+                await new Promise(r => setTimeout(r, 45));
+                break;
+              }
+            }
+            if (moved) break;
+          }
         }
+      } finally {
+        isAutoCompleting = false;
+        btnAutoFinish.disabled = false;
+        if (!game.hasWon && game.canAutoComplete()) {
+          btnAutoFinish.style.display = 'inline-flex';
+        } else {
+          btnAutoFinish.style.display = 'none';
+        }
+        game.checkWin();
       }
     }
 
@@ -2156,9 +2235,13 @@
     let winModalTimer = null;
 
     document.getElementById('btnUndo').addEventListener('click', () => {
+      if (isAutoCompleting) return;
       if (game.undo()) renderBoard();
     });
-    document.getElementById('btnHint').addEventListener('click', showHint);
+    document.getElementById('btnHint').addEventListener('click', () => {
+      if (isAutoCompleting) return;
+      showHint();
+    });
 
     // Open Restart / New Game modal on reload button click
     document.getElementById('btnNewGame').addEventListener('click', () => {
@@ -2312,6 +2395,8 @@
     }
 
     function stopWinAnimation() {
+      isAutoCompleting = false;
+      btnAutoFinish.disabled = false;
       if (winModalTimer) {
         clearTimeout(winModalTimer);
         winModalTimer = null;
