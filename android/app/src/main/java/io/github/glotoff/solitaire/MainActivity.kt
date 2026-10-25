@@ -86,6 +86,21 @@ class MainActivity : ComponentActivity() {
                         true
                     }
                 }
+                override fun onPageFinished(view: WebView, url: String?) {
+                    super.onPageFinished(view, url)
+                    val windowInsets = ViewCompat.getRootWindowInsets(view)
+                    if (windowInsets != null) {
+                        val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+                        val density = resources.displayMetrics.density
+                        val topDp = (insets.top / density).toInt()
+                        val bottomDp = (insets.bottom / density).toInt()
+                        view.evaluateJavascript(
+                            "document.documentElement.style.setProperty('--safe-top', '${topDp}px');" +
+                            "document.documentElement.style.setProperty('--safe-bottom', '${bottomDp}px');",
+                            null
+                        )
+                    }
+                }
             }
 
             webChromeClient = WebChromeClient()
@@ -93,10 +108,22 @@ class MainActivity : ComponentActivity() {
 
         setContentView(webView)
 
-        // Handle edge-to-edge window insets (notch & gesture navigation bar)
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { view, windowInsets ->
+        // Handle edge-to-edge window insets (notch & gesture/3-button navigation bar)
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { _, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(0, 0, 0, 0)
+            val density = resources.displayMetrics.density
+            val topDp = (insets.top / density).toInt()
+            val bottomDp = (insets.bottom / density).toInt()
+            val leftDp = (insets.left / density).toInt()
+            val rightDp = (insets.right / density).toInt()
+
+            webView.evaluateJavascript(
+                "document.documentElement.style.setProperty('--safe-top', '${topDp}px');" +
+                "document.documentElement.style.setProperty('--safe-bottom', '${bottomDp}px');" +
+                "document.documentElement.style.setProperty('--safe-left', '${leftDp}px');" +
+                "document.documentElement.style.setProperty('--safe-right', '${rightDp}px');",
+                null
+            )
             windowInsets
         }
 
